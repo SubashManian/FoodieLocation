@@ -172,3 +172,8 @@
   color: white;
 }
 
+.thumbnail {
+  width: 100px;
+  height: 56px;
+}
+

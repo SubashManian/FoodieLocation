@@ -292,16 +292,12 @@ const HotelLocationList = () => {
         <table className="hotel-table">
           <thead>
             <tr>
-              {/* <th>DataEntry Number</th> */}
               <th>Name</th>
               <th>Address</th>
               <th>City</th>
-              <th>Rating</th>
-              <th>Phone</th>
               <th>Map Location</th>
               <th>Vlog Video</th>
-              {/* <th>View Count</th> */}
-              {/* <th>Post Date</th> */}
+              <th>Thumbnail</th>
               <th>Latitude</th>
               <th>Longitude</th>
               <th>Edit</th>
@@ -352,30 +348,6 @@ const HotelLocationList = () => {
                     hotel.hotelCity
                   )}
                 </td>
-                <td className="td-rating-Cell">
-                  {editingHotelId === hotel.hotelId ? (
-                    <input
-                      type="number"
-                      name="hotelRating"
-                      value={editedHotel.hotelRating}
-                      onChange={handleInputChange}
-                    />
-                  ) : (
-                    hotel.hotelRating
-                  )}
-                </td>
-                <td>
-                  {editingHotelId === hotel.hotelId ? (
-                    <input
-                      type="text"
-                      name="hotelPhone"
-                      value={editedHotel.hotelPhone}
-                      onChange={handleInputChange}
-                    />
-                  ) : (
-                    hotel.hotelPhone
-                  )}
-                </td>
                 <td className="mapLink-Cell">
                   {editingHotelId === hotel.hotelId ? (
                     <input
@@ -414,30 +386,28 @@ const HotelLocationList = () => {
                     </a>
                   )}
                 </td>
-                {/* <td>
-                  {editingHotelId === hotel.hotelId ? (
-                    <input
-                      type="number"
-                      name="vlogVideoViewCount"
-                      value={editedHotel.vlogVideoViewCount}
-                      onChange={handleInputChange}
-                    />
+                <td>
+                  {hotel.videoId ? (
+                    hotel.videoType.includes('Youtube') ? (
+                      <img
+                        src={`https://img.youtube.com/vi/${hotel.videoId}/maxresdefault.jpg`}
+                        alt="YouTube Thumbnail"
+                        className="thumbnail"
+                        onError={(e) => {
+                          // Fallback to a lower resolution if maxresdefault.jpg is not available
+                          e.target.onerror = null; 
+                          e.target.src = `https://img.youtube.com/vi/${hotel.videoId}/hqdefault.jpg`;
+                        }}
+                        width="160"
+                        height="90"
+                      />
+                    ) : (
+                      "Instagram Video"
+                    )
                   ) : (
-                    hotel.vlogVideoViewCount
+                    "No Video"
                   )}
                 </td>
-                <td>
-                  {editingHotelId === hotel.hotelId ? (
-                    <input
-                      type="date"
-                      name="vlogPostDate"
-                      value={editedHotel.vlogPostDate.substring(0, 10)}
-                      onChange={handleInputChange}
-                    />
-                  ) : (
-                    format(new Date(hotel.vlogPostDate), 'MMM do, yyyy')
-                  )}
-                </td> */}
                 <td>
                   {editingHotelId === hotel.hotelId ? (
                     <input

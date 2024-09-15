@@ -21,14 +21,14 @@ const HotelLocationList = () => {
   const [editingHotelId, setEditingHotelId] = useState(null); // Track which hotel is being edited
   const [editedHotel, setEditedHotel] = useState(null); // Track the edited hotel data
   const [loadingHotelIds, setLoadingHotelIds] = useState([]);
-  const [showVerifiedOnly, setShowVerifiedOnly] = useState(true);
+  const [showVerifiedOnly, setShowVerifiedOnly] = useState(false);
 
   // Fetch hotels data from the API
   const fetchHotels = async () => {
     try {
       setLoading(true); // Start loading
-    //   const url = !showVerifiedOnly ? `${baseUrl}/getVerifiedHotels` : `${baseUrl}/gethotels/true`
-      const response = await fetch(`${baseUrl}/getVerifiedHotels`);
+      const url = !showVerifiedOnly ? `${baseUrl}/getVerifiedHotels` : `${baseUrl}/getVerifiedHotels/true`
+      const response = await fetch(url);
       if (!response.ok) {
         throw new Error('Network response was not ok');
       }
@@ -272,14 +272,14 @@ const HotelLocationList = () => {
           className="date-picker"
         /> */}
 
-        {/* <label>
+        <label>
           <input
             type="checkbox"
             checked={showVerifiedOnly}
             onChange={handleCheckboxChange}
           />
-          include Verified
-        </label> */}
+          show location data
+        </label>
 
         <div className="stats">
           <span>Total Data: {totalData}</span>

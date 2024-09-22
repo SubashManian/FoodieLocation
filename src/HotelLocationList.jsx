@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import './HotelList.css'; // Import the CSS file for styling
+import './HotelList.css';
 import HotelDetailsModal from './HotelDetailsModal';
 import DatePicker from 'react-datepicker';
 import 'react-datepicker/dist/react-datepicker.css';

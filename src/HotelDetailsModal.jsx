@@ -1,8 +1,64 @@
 // src/HotelDetailsModal.js
-import React from 'react';
+import React, {useState, useEffect} from 'react';
 import './HotelDetailsModal.css'; // Import the CSS file for styling
 
+const baseUrl = 'https://food-app-be-sequelize-6i8s.onrender.com';
+
 const HotelDetailsModal = ({ show, onClose, hotelDetails }) => {
+  // State for multiple dishes
+  const [dishes, setDishes] = useState([]);
+  const [newDish, setNewDish] = useState({ dishName: '', dishPrice: '' });
+  const [loading, setLoading] = useState(false);
+
+  // Handle input change for new dish
+  const handleInputChange = (e) => {
+    const { name, value } = e.target;
+    setNewDish({ ...newDish, [name]: value });
+  };
+
+  // Add dish to the list (but don't submit yet)
+  const handleAddDish = () => {
+    if (newDish.dishName && newDish.dishPrice) {
+      setDishes([...dishes, newDish]);
+      setNewDish({ dishName: '', dishPrice: '' }); // Clear the input fields
+    }
+  };
+
+  // Submit all dishes
+  const handleSubmitDishes = async () => {
+    setLoading(true);
+    try {
+      for (let dish of dishes) {
+        const dishData = {
+          hotelId: hotelDetails.hotelId,  // Assuming hotelId is part of hotelDetails
+          dishName: dish.dishName,
+          dishPrice: dish.dishPrice
+        };
+
+        const response = await fetch(`${baseUrl}/dish`, {
+          method: 'POST',
+          headers: {
+              'Content-Type': 'application/json',
+          },
+          body: JSON.stringify(dishData),
+        });
+
+        if (!response.ok) {
+          console.error('Error adding dish:', response.statusText);
+          throw new Error('Failed to add dish');
+        }
+      }
+
+      // After successful submission, update the hotelSignatureDishes and clear the added dishes
+      hotelDetails.hotelSignatureDishes.push(...dishes);
+      setDishes([]); // Clear the dishes array
+    } catch (error) {
+      console.error('Error adding dishes:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
   if (!show) {
     return null;
   }
@@ -20,7 +76,6 @@ const HotelDetailsModal = ({ show, onClose, hotelDetails }) => {
             <tr>
               <th>Dish Name</th>
               <th>Price</th>
-              <th>Category</th>
             </tr>
           </thead>
           <tbody>
@@ -28,11 +83,43 @@ const HotelDetailsModal = ({ show, onClose, hotelDetails }) => {
               <tr key={dish.hotelSignatureDishId}>
                 <td>{dish.dishName}</td>
                 <td>{dish.dishPrice}</td>
-                <td>{dish.dishCategory}</td>
+              </tr>
+            ))}
+            {dishes.map((dish, index) => (
+              <tr key={index}>
+                <td>{dish.dishName}</td>
+                <td>{dish.dishPrice}</td>
               </tr>
             ))}
           </tbody>
         </table>
+
+        {/* Add New Dish Form */}
+        <h4>Add New Signature Dish</h4>
+        <div className="add-dish-form">
+            <input
+                type="text"
+                name="dishName"
+                placeholder="Dish Name"
+                value={newDish.dishName}
+                onChange={handleInputChange}
+            />
+            <input
+                type="text"
+                name="dishPrice"
+                placeholder="Dish Price"
+                value={newDish.dishPrice}
+                onChange={handleInputChange}
+            />
+            <button onClick={handleAddDish} disabled={!newDish.dishName || !newDish.dishPrice}>
+                Add Another
+            </button>
+        </div>
+
+        {/* Submit All Dishes Button */}
+        <button onClick={handleSubmitDishes} disabled={dishes.length === 0 || loading}>
+            {loading ? 'Submitting...' : 'Submit All Dishes'}
+        </button>
 
         {/* Display Timings */}
         {

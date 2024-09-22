@@ -5,23 +5,23 @@ import DatePicker from 'react-datepicker';
 import 'react-datepicker/dist/react-datepicker.css';
 import { format } from 'date-fns';
 
-const baseUrl = 'https://food-app-be-sequelize.onrender.com';
+const baseUrl = 'https://food-app-be-sequelize-6i8s.onrender.com';
 
 const HotelLocationList = () => {
   const [hotels, setHotels] = useState([]);
-  const [countsDetails, setCountDetails] = useState({});
   const [selectedHotel, setSelectedHotel] = useState(null);
   const [showModal, setShowModal] = useState(false);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
-  const [filteredHotels, setFilteredHotels] = useState([]);
   const [searchTerm, setSearchTerm] = useState('');
-  const [selectedDate, setSelectedDate] = useState(null);
   const [editingHotelId, setEditingHotelId] = useState(null); // Track which hotel is being edited
   const [editedHotel, setEditedHotel] = useState(null); // Track the edited hotel data
   const [loadingHotelIds, setLoadingHotelIds] = useState([]);
   const [showVerifiedOnly, setShowVerifiedOnly] = useState(false);
+  const [selectedHotels, setSelectedHotels] = useState([]);
+  const [isAllChecked, setIsAllChecked] = useState(false);
+  const [mergeData, setMergeData] = useState([]);
 
   // Fetch hotels data from the API
   const fetchHotels = async () => {
@@ -34,7 +34,23 @@ const HotelLocationList = () => {
       }
       const data = await response.json();
       setHotels(data);
-      setFilteredHotels(data); // Set filtered hotels initially to all hotels
+      setError(null); 
+    } catch (error) {
+      setError(error.message);
+    } finally {
+      setLoading(false); // Stop loading
+    }
+  };
+
+  const searchHotels = async (name) => {
+    try {
+      setLoading(true); // Start loading
+      const response = await fetch(`${baseUrl}/searchhotels/${name}`);
+      if (!response.ok) {
+        throw new Error('Network response was not ok');
+      }
+      const data = await response.json();
+      setHotels(data);
       setError(null); 
     } catch (error) {
       setError(error.message);
@@ -62,7 +78,6 @@ const HotelLocationList = () => {
         throw new Error('Network response was not ok');
       }
       const data = await response.json();
-      setCountDetails(data);
       setError(null); // Clear any previous errors
     } catch (error) {
       setError(error.message);
@@ -107,36 +122,18 @@ const HotelLocationList = () => {
     fetchHotels();
   }, []);
 
-  // Handle search input change
   const handleSearchChange = (event) => {
     const searchValue = event.target.value;
     setSearchTerm(searchValue);
 
     if (searchValue.trim() === '') {
-      // If search term is cleared, fetch hotels from API
       setSearchTerm('');
       fetchCount('');
       fetchHotels();
     } else {
-      if (searchValue?.trim()?.length === 10) {
-        fetchCount(searchValue?.trim());
+      if (searchValue?.trim()?.length > 4) {
+        searchHotels(searchValue?.trim());
       }
-      // Filter hotels based on the search term and selected date
-      filterHotels(searchValue, selectedDate);
-    }
-  };
-
-  // Handle date change
-  const handleDateChange = (date) => {
-    console.log(date);
-    
-    if (date === null) {
-      setSelectedDate(null);
-      fetchHotels();
-    } else {
-      setSelectedDate(date);
-      // Filter hotels based on the search term and selected date
-      filterHotels(searchTerm, date);
     }
   };
 
@@ -218,17 +215,48 @@ const HotelLocationList = () => {
     setEditedHotel((prev) => ({ ...prev, [name]: value }));
   };
 
-  // Display loading indicator if data is being fetched
+  // Handle Checkbox Change
+  const handleDuplicateCheckChange = (hotelId) => {
+    setSelectedHotels((prevSelectedHotels) => {
+        if (prevSelectedHotels.includes(hotelId)) {
+            return prevSelectedHotels.filter(id => id !== hotelId);
+        } else {
+            return [...prevSelectedHotels, hotelId];
+        }
+    });
+  };
+
+  // Handle Check All Toggle
+  const handleCheckAll = (e) => {
+    const isChecked = e.target.checked;
+    setIsAllChecked(isChecked);
+    if (isChecked) {
+        setSelectedHotels(hotels.map(hotel => hotel.hotelId));
+    } else {
+        setSelectedHotels([]);
+    }
+  };
+
+  // Handle Merge Button Click
+  const handleMergeClick = () => {
+    const selectedHotelData = hotels.filter(hotel => selectedHotels.includes(hotel.hotelId))
+      .map(hotel => ({
+          hotelVlogVideoLink: hotel.hotelVlogVideoLink,
+          videoId: hotel.videoId,
+          videoType: hotel.videoType,
+      }));
+    setMergeData(selectedHotelData);
+    console.log('Merged Data:', selectedHotelData);
+  };
+
   if (loading) {
     return <div className="loading">Loading...</div>;
   }
 
-  // Display error message if an error occurs
   if (error) {
     return <div className="error-message">Error: {error}</div>;
   }
 
-  // Check if a hotel ID is currently loading
   const isHotelLoading = (hotelId) => loadingHotelIds.includes(hotelId);
 
   const isURL = (str) => {
@@ -256,14 +284,14 @@ const HotelLocationList = () => {
 
       {/* Search and Date Filter */}
       <div className="filter-container">
-        {/* <input
+        <input
           type="text"
-          placeholder="Search by Mobile Number"
+          placeholder="Search by Name"
           value={searchTerm}
           onChange={handleSearchChange}
           className="search-input"
         />
-        <DatePicker
+        {/* <DatePicker
           selected={selectedDate}
           onChange={handleDateChange}
           dateFormat="yyyy-MM-dd"
@@ -286,12 +314,29 @@ const HotelLocationList = () => {
           <span className="approved-count">Verified Data: {verifiedData}</span>
           {/* <span className="approved-count">Valid Data: {validData}</span> */}
         </div>
+
+        {/* Merge Button */}
+        {selectedHotels.length > 1 && (
+          <button className="merge-button" onClick={handleMergeClick}>
+            Merge
+          </button>
+        )}
       </div>
 
       <div className="table-container">
         <table className="hotel-table">
           <thead>
             <tr>
+              {searchTerm && (
+                <th>
+                  <input
+                    type="checkbox"
+                    checked={isAllChecked}
+                    onChange={handleCheckAll}
+                  />
+                  Check All
+                </th>
+              )}
               <th>Name</th>
               <th>Address</th>
               <th>City</th>
@@ -300,13 +345,22 @@ const HotelLocationList = () => {
               <th>Thumbnail</th>
               <th>Latitude</th>
               <th>Longitude</th>
+              <th>Category</th>
               <th>Edit</th>
             </tr>
           </thead>
           <tbody>
             {hotels.map((hotel) => (
               <tr key={hotel.hotelId}>
-                {/* <td>{hotel.userMobileNumber}</td> */}
+                {searchTerm && (
+                  <td>
+                    <input
+                      type="checkbox"
+                      checked={selectedHotels.includes(hotel.hotelId)}
+                      onChange={() => handleDuplicateCheckChange(hotel.hotelId)}
+                    />
+                  </td>
+                )}
                 <td onClick={() => {
                   if (editingHotelId != hotel.hotelId) {
                     handleHotelSelect(hotel);
@@ -432,28 +486,18 @@ const HotelLocationList = () => {
                     hotel.longitude
                   )}
                 </td>
-                {/* <td>
-                  {!hotel.verified && (
-                    <button
-                      className="approve-button"
-                      onClick={() => handleApprove(hotel.hotelId, true)}
-                      disabled={isHotelLoading(hotel.hotelId)}
-                    >
-                      {isHotelLoading(hotel.hotelId) ? 'Approving...' : 'Approve'}
-                    </button>
+                <td>
+                  {editingHotelId === hotel.hotelId ? (
+                    <input
+                      type="text"
+                      name="hotelCategory"
+                      value={editedHotel.hotelCategory}
+                      onChange={handleInputChange}
+                    />
+                  ) : (
+                    hotel.hotelCategory
                   )}
                 </td>
-                <td>
-                  {!hotel.verified && (
-                    <button
-                      className="reject-button"
-                      onClick={() => handleApprove(hotel.hotelId, false)}
-                      disabled={isHotelLoading(hotel.hotelId)}
-                    >
-                      {isHotelLoading(hotel.hotelId) ? 'Rejecting...' : 'Reject'}
-                    </button>
-                  )}
-                </td> */}
                 <td>
                   {editingHotelId === hotel.hotelId ? (
                     <>

@@ -8,6 +8,18 @@ import { format } from 'date-fns';
 const baseUrl = 'https://food-app-be-sequelize-6i8s.onrender.com';
 
 const HotelLocationList = () => {
+
+  const category = [
+    {'Name': 'NonVeg', 'ID': 'NonVeg'},
+    {'Name': 'Veg', 'ID': 'Veg'},
+    {'Name': 'Beverage', 'ID': 'Beverage'},
+    {'Name': 'Cafe', 'ID': 'Cafe'},
+    {'Name': 'Snacks', 'ID': 'Snacks'},
+    {'Name': 'Fast Food', 'ID': 'Fast Food'},
+    {'Name': 'Deserts', 'ID': 'Deserts'},
+    {'Name': 'RestoBar', 'ID': 'RestoBar'},
+  ];
+
   const [hotels, setHotels] = useState([]);
   const [selectedHotel, setSelectedHotel] = useState(null);
   const [showModal, setShowModal] = useState(false);
@@ -488,12 +500,17 @@ const HotelLocationList = () => {
                 </td>
                 <td>
                   {editingHotelId === hotel.hotelId ? (
-                    <input
-                      type="text"
+                    <select
                       name="hotelCategory"
                       value={editedHotel.hotelCategory}
                       onChange={handleInputChange}
-                    />
+                    >
+                      {category.map((cat) => (
+                        <option key={cat.ID} value={cat.ID}>
+                          {cat.Name}
+                        </option>
+                      ))}
+                    </select>
                   ) : (
                     hotel.hotelCategory
                   )}

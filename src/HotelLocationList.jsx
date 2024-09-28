@@ -21,7 +21,7 @@ const HotelLocationList = () => {
   ];
 
   const [hotels, setHotels] = useState([]);
-  const [selectedHotel, setSelectedHotel] = useState(null);
+  const [modalSelectedHotel, setModalSelectedHotel] = useState(null);
   const [showModal, setShowModal] = useState(false);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -34,6 +34,11 @@ const HotelLocationList = () => {
   const [selectedHotels, setSelectedHotels] = useState([]);
   const [isAllChecked, setIsAllChecked] = useState(false);
   const [mergeData, setMergeData] = useState([]);
+  const [originalHotel, setOriginalHotel] = useState(null);
+
+  const handleRadioChange = (hotelId) => {
+    setOriginalHotel(hotelId);
+  };
 
   // Fetch hotels data from the API
   const fetchHotels = async () => {
@@ -163,14 +168,14 @@ const HotelLocationList = () => {
 
   const handleCloseModal = () => {
     setShowModal(false);
-    setSelectedHotel(null);
+    setModalSelectedHotel(null);
   };
 
   const handleHotelSelect = (hotel) => {
     // Mock fetching details for selected hotel
     console.log("Entered Modal");
     
-    setSelectedHotel(hotel);
+    setModalSelectedHotel(hotel);
     setShowModal(true);
   };
 
@@ -249,16 +254,109 @@ const HotelLocationList = () => {
     }
   };
 
+  const updateHotelVideos = async (videoList) => {
+    if (videoList?.length > 0) {
+      try {
+        const promises = videoList.map((item) => 
+          fetch(`${baseUrl}/createhotelvideo`, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify(item),
+          })
+          .then((response) => {
+            if (!response.ok) {
+              throw new Error(`Failed to merge the hotel video for item ${item.hotelId}`);
+            }
+            console.log("Hotel video merged for hotelId:", item.hotelId);
+            return response;
+          })
+        );
+    
+        await Promise.all(promises);
+        const confirmDelete = window.confirm("All hotel videos merged successfully, do you want to delete the duplicate records?");
+
+        if (confirmDelete) {
+          handleDuplicateDelete();
+        }
+      } catch (error) {
+        console.log(error);
+        alert(`Error: ${error.message}`);
+      } finally {
+        // Optionally perform cleanup tasks here
+        // Example: clear loading states
+        // setLoadingHotelIds([]); 
+      }
+    }
+  }
+
+  const handleDuplicateDelete = async () => {
+    if (selectedHotels?.length > 0) {
+      try {
+        const promises = selectedHotels.map((item) => {
+          if (item != originalHotel) {
+            return (
+              fetch(`${baseUrl}/deletehotel/${item}`, {
+                method: 'GET',
+                headers: {
+                  'Content-Type': 'application/json',
+                },
+              })
+              .then((response) => {
+                if (!response.ok) {
+                  throw new Error(`Failed to delete the hotel for item ${item}`);
+                }
+                console.log("Hotel Deleted for hotelId:", item);
+                return response;
+              })
+            );
+          } else {
+            console.log('Original Data');
+          }
+        });
+    
+        await Promise.all(promises);
+        setSelectedHotels([]);
+        setOriginalHotel(null);
+        searchHotels(searchTerm);
+        alert("Record deleted successfully.");
+      } catch (error) {
+        console.log(error);
+        alert(`Error: ${error.message}`);
+      } finally {
+        // Optionally perform cleanup tasks here
+        // Example: clear loading states
+        // setLoadingHotelIds([]); 
+      }
+    }
+  }
+
   // Handle Merge Button Click
   const handleMergeClick = () => {
-    const selectedHotelData = hotels.filter(hotel => selectedHotels.includes(hotel.hotelId))
-      .map(hotel => ({
-          hotelVlogVideoLink: hotel.hotelVlogVideoLink,
-          videoId: hotel.videoId,
-          videoType: hotel.videoType,
-      }));
-    setMergeData(selectedHotelData);
-    console.log('Merged Data:', selectedHotelData);
+    if (originalHotel != null && originalHotel != undefined) {
+      const selectedHotelData = hotels.filter(hotel => selectedHotels.includes(hotel.hotelId))
+        .map(hotel => {
+          return ({
+            hotelVlogVideoLink: hotel.hotelVlogVideoLink,
+            vlogVideoViewCount: hotel.vlogVideoViewCount,
+            vlogPostDate: hotel.vlogPostDate,
+            videoId: hotel.videoId,
+            videoType: hotel.videoType,
+            verified: hotel.verified,
+            hotelId: originalHotel
+          });
+        });
+
+      if (!selectedHotelData.some(video => !video.verified)) {
+        updateHotelVideos(selectedHotelData);
+      } else {
+        alert(`One of the hotel is not verified`);
+      }
+      
+    } else {
+      alert(`Please select the original hotel`);
+    }
   };
 
   if (loading) {
@@ -349,6 +447,9 @@ const HotelLocationList = () => {
                   Check All
                 </th>
               )}
+              {searchTerm && (
+                <th>Original</th>
+              )}
               <th>Name</th>
               <th>Address</th>
               <th>City</th>
@@ -364,12 +465,23 @@ const HotelLocationList = () => {
           <tbody>
             {hotels.map((hotel) => (
               <tr key={hotel.hotelId}>
+                
                 {searchTerm && (
                   <td>
                     <input
                       type="checkbox"
                       checked={selectedHotels.includes(hotel.hotelId)}
                       onChange={() => handleDuplicateCheckChange(hotel.hotelId)}
+                    />
+                  </td>
+                )}
+                {searchTerm && (
+                  <td>
+                    <input
+                      type="radio"
+                      name="hotelSelection"
+                      checked={originalHotel === hotel.hotelId}
+                      onChange={() => handleRadioChange(hotel.hotelId)}
                     />
                   </td>
                 )}
@@ -550,7 +662,7 @@ const HotelLocationList = () => {
       <HotelDetailsModal
         show={showModal}
         onClose={handleCloseModal}
-        hotelDetails={selectedHotel}
+        hotelDetails={modalSelectedHotel}
       />
     </div>
   );

@@ -1,9 +1,10 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import './HotelList.css';
 import HotelDetailsModal from './HotelDetailsModal';
 import DatePicker from 'react-datepicker';
 import 'react-datepicker/dist/react-datepicker.css';
 import { format } from 'date-fns';
+import { debounce } from 'lodash';
 
 const baseUrl = 'https://food-app-be-sequelize-6i8s.onrender.com';
 
@@ -16,7 +17,7 @@ const HotelLocationList = () => {
     {'Name': 'Cafe', 'ID': 'Cafe'},
     {'Name': 'Snacks', 'ID': 'Snacks'},
     {'Name': 'Fast Food', 'ID': 'Fast Food'},
-    {'Name': 'Deserts', 'ID': 'Deserts'},
+    {'Name': 'Desserts', 'ID': 'Desserts'},
     {'Name': 'RestoBar', 'ID': 'RestoBar'},
   ];
 
@@ -139,19 +140,35 @@ const HotelLocationList = () => {
     fetchHotels();
   }, []);
 
+  const debouncedSave = useCallback(
+    debounce(text => {
+      console.log(":Entering debounce");
+      console.log(text);
+      if (text.trim().length > 0) {
+        searchHotels(text.trim());
+      }
+    }, 1000),
+    [],
+  );
+
+  const changeTextDebounced = (text) => {
+    debouncedSave(text);
+  }
+
   const handleSearchChange = (event) => {
     const searchValue = event.target.value;
     setSearchTerm(searchValue);
-
+    changeTextDebounced(searchValue);
     if (searchValue.trim() === '') {
       setSearchTerm('');
       fetchCount('');
       fetchHotels();
-    } else {
-      if (searchValue?.trim()?.length > 4) {
-        searchHotels(searchValue?.trim());
-      }
     }
+    //  else {
+      // if (searchValue?.trim()?.length > 4) {
+      //   searchHotels(searchValue?.trim());
+      // }
+    // }
   };
 
   // Function to filter hotels by userMobileNumber and vlogPostDate
